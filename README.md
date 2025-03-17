@@ -1,8 +1,22 @@
-# Multi-Layer Perceptron (MLP) Training and Evaluation
+# Neural Network Training and Evaluation
 
 ## Overview
 
-This repository contains an implementation of a Multi-Layer Perceptron (MLP) model that can be trained on the MNIST and Fashion-MNIST datasets. The training process is configurable via command-line arguments, and the results, including a confusion matrix, are logged using Weights & Biases (W&B).
+This repository contains an implementation of a Neural Network model that can be trained on the MNIST and Fashion-MNIST datasets. The training process is configurable via command-line arguments, and the results, including a confusion matrix, are logged using Weights & Biases (W&B).
+
+## Prerequisites
+
+Report Link
+
+```
+https://wandb.ai/da24m012-iit-madras/MLP/reports/Report-DA6401-Assignment-1--VmlldzoxMTYzMDQxMQ
+```
+
+Github Link
+
+```
+https://github.com/Pradiprajvala/da6401_assignment1
+```
 
 ## Prerequisites
 
