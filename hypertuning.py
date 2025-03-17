@@ -1,6 +1,3 @@
-# Ensure you have a function to load the dataset
-# from data_loader import load_data
-# from mlp import MLP  # Ensure you have an MLP class implemented
 import wandb
 import numpy as np
 from sklearn.model_selection import train_test_split
