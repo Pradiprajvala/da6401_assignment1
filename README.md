@@ -31,7 +31,7 @@ pip install numpy tensorflow wandb argparse scikit-learn keras
 To train the MLP, run the following command:
 
 ```bash
-python main.py --wandb_project myproject --wandb_entity myname --dataset fashion_mnist --epochs 10 --batch_size 32 --loss cross_entropy --optimizer adam --learning_rate 0.001 --num_layers 2 --hidden_size 128 --activation ReLU
+python train.py --wandb_project myproject --wandb_entity myname --dataset fashion_mnist --epochs 10 --batch_size 32 --loss cross_entropy --optimizer adam --learning_rate 0.001 --num_layers 2 --hidden_size 128 --activation ReLU
 ```
 
 ### Command-line Arguments
