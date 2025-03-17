@@ -2,11 +2,16 @@
 # from data_loader import load_data
 # from mlp import MLP  # Ensure you have an MLP class implemented
 import wandb
-import argparse
 import numpy as np
 from sklearn.model_selection import train_test_split
 from keras.datasets import fashion_mnist, mnist
 
+# fashion mnist
+from keras.datasets import fashion_mnist
+
+(x_train, y_train), (x_test, y_test) = fashion_mnist.load_data()
+
+print(x_train.shape)
 
 class MLP:
     def __init__(self, inputs, hidden_size, outputs, hidden_layers, activation_function, weight_initialization="random", beta=0.9, beta1=0.9, beta2=0.999, beta_rmsprop=0.9, epsilon=1e-6):
@@ -397,98 +402,34 @@ def preprocessdata(x, y):
 
     return x, one_hot_y
 
+def initialize_model_train():
+    wandb.init()
+    config = wandb.config
+    wandb.run.name=f"hl_{config.hidden_layers}_hn_{config.hidden_size}_bs_{config.batch_size}_ac_{config.activation_function}_op_{config.optimizer}"
+    mlp = MLP(784, config.hidden_size, 10, config.hidden_layers, activation_function=config.activation_function, weight_initialization=config.weight_initialization, beta=0.9)
+    x_preprocessed, y_preprocessed = preprocessdata(x_train, y_train)
+    mlp.train(x_preprocessed, y_preprocessed, max_iter=config.max_iter, optimizer=config.optimizer, learning_rate=config.learning_rate, lambda_= config.weight_decay)
+    wandb.finish()  
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Train an MLP with custom parameters.")
-
-    # Weights & Biases arguments
-    parser.add_argument("-wp", "--wandb_project", type=str,
-                        default="myprojectname", help="Project name for W&B")
-    parser.add_argument("-we", "--wandb_entity", type=str,
-                        default="myname", help="Entity name for W&B")
-
-    # Dataset and training parameters
-    parser.add_argument("-d", "--dataset", type=str, choices=[
-                        "mnist", "fashion_mnist"], default="fashion_mnist", help="Dataset to use")
-    parser.add_argument("-e", "--epochs", type=int,
-                        default=1, help="Number of training epochs")
-    parser.add_argument("-b", "--batch_size", type=int,
-                        default=4, help="Batch size")
-    parser.add_argument("-l", "--loss", type=str, choices=[
-                        "mean_squared_error", "cross_entropy"], default="cross_entropy", help="Loss function")
-    parser.add_argument("-o", "--optimizer", type=str, choices=[
-                        "sgd", "momentum", "nag", "rmsprop", "adam"], default="sgd", help="Optimizer")
-    parser.add_argument("-lr", "--learning_rate", type=float,
-                        default=0.1, help="Learning rate")
-    parser.add_argument("-m", "--momentum", type=float, default=0.5,
-                        help="Momentum for momentum-based optimizers")
-    parser.add_argument("-beta", "--beta", type=float,
-                        default=0.5, help="Beta for RMSProp optimizer")
-    parser.add_argument("-beta1", "--beta1", type=float,
-                        default=0.5, help="Beta1 for Adam optimizers")
-    parser.add_argument("-beta2", "--beta2", type=float,
-                        default=0.5, help="Beta2 for Adam optimizers")
-    parser.add_argument("-eps", "--epsilon", type=float,
-                        default=1e-6, help="Epsilon for optimizers")
-    parser.add_argument("-w_d", "--weight_decay", type=float,
-                        default=0.0, help="Weight decay")
-    parser.add_argument("-w_i", "--weight_init", type=str, choices=[
-                        "random", "Xavier"], default="random", help="Weight initialization method")
-    parser.add_argument("-nhl", "--num_layers", type=int,
-                        default=1, help="Number of hidden layers")
-    parser.add_argument("-sz", "--hidden_size", type=int,
-                        default=4, help="Size of hidden layers")
-    parser.add_argument("-a", "--activation", type=str, choices=[
-                        "identity", "sigmoid", "tanh", "ReLU"], default="sigmoid", help="Activation function")
-
-    args = parser.parse_args()
-
-    # Initialize W&B
-
-    # Load dataset
-    # x_train, y_train, x_test, y_test = load_data(args.dataset)
-
-    (x_train, y_train), (x_test, y_test) = fashion_mnist.load_data(
-    ) if args.dataset == "fashion_mnist" else mnist.load_data()
-    print(args.dataset, " dataset loaded")
-
-    wandb.init(project=args.wandb_project,
-               entity=args.wandb_entity, config=args)
-    
-    wandb.run.name = f"{args.dataset}_{args.optimizer}_{args.activation}_{args.hidden_size}_{args.num_layers}_{args.weight_init}_{args.learning_rate}_{args.epochs}_{args.weight_decay}_{args.batch_size}"
-    
-    # Initialize MLP
-    mlp = MLP(784, args.hidden_size, 10, args.num_layers,
-              activation_function=args.activation, weight_initialization=args.weight_init, beta=args.momentum, beta1=args.beta1, beta2=args.beta2, beta_rmsprop=args.beta, epsilon=args.epsilon)
-
-    # Train MLP
-    x_preprocessed, y_preprocessed = preprocessdata(x_train, y_train)
-    mlp.train(x_preprocessed, y_preprocessed, max_iter=args.epochs, optimizer=args.optimizer,
-              learning_rate=args.learning_rate, lambda_=args.weight_decay)
-
-    print("Training completed!")
-
-    # confusion matrix
-    x_test_preprocessed, y_test_preprocessed = preprocessdata(x_test, y_test)
-    predictions = mlp.predict(x_test_preprocessed).T
-
-    correct = 0
-    predicted_lables, true_lables = [], []
-    for i in range(len(x_test_preprocessed)):
-        predicted_lable = np.argmax(predictions[i])
-        true_lable = np.argmax(y_test_preprocessed[i])
-        predicted_lables.append(predicted_lable)
-        true_lables.append(true_lable)
-        if predicted_lable == true_lable:
-            correct += 1
-
-    conf_mat = wandb.plot.confusion_matrix(y_true=true_lables, preds=predicted_lables, class_names=[
-                                           str(i) for i in range(len(y_test_preprocessed[0]))])
-    wandb.log({"confusion_matrix": conf_mat})
-
-    print("Test Accuracy", correct/len(x_test_preprocessed))
-
+    sweep_config = {
+        "name": "MLP Fashion MNIST Sweep",
+        "method": "bayes",
+        "metric": {"name": "accuracy", "goal": "maximize"},
+        "parameters": {
+            "hidden_size": {"values": [32, 64, 128]},
+            "hidden_layers": {"values": [3, 4, 5]},
+            "learning_rate": {"values": [0.001, 0.0001]},
+            "max_iter": {"values": [5, 10]},
+            "optimizer": {"values": ["momentum", "rmsprop", "nesterov", "adam", "sgd"]},
+            "weight_initialization": {"values": ["random", "Xavier"]},
+            "activation_function": {"values": ["sigmoid", "ReLU", "tanh"]},
+            "batch_size": {"values": [32, 64, 128]},
+            "weight_decay": {"values": [0, 0.0005, 0.5]},
+        },
+    }
+    sweep_id = wandb.sweep(sweep=sweep_config, project="MLP")
+    wandb.agent(sweep_id, function=initialize_model_train)
 
 if __name__ == "__main__":
     main()
